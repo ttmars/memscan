@@ -1,30 +1,93 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"log"
+	"memscan/pkg"
 	"os"
+	"strconv"
+	"strings"
 )
 
 func main() {
-	path := fmt.Sprintf("/proc/%v/mem", os.Args[1])
-	f, err := os.OpenFile(path, os.O_RDWR, 0644)
-	if err != nil {
-		log.Fatal(err)
+	if len(os.Args) != 2 {
+		fmt.Println("参数错误！")
+		return
 	}
-	defer f.Close()
 
-	ff, err := os.OpenFile("demo_mem", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+	scan, err := pkg.NewMemScanner(os.Args[1])
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("进程载入失败！", err)
+		return
 	}
-	defer ff.Close()
+	defer scan.Close()
 
-	f.Seek(0x7f0cfc4ef000, 0)
-	b := make([]byte, 1024*4)
-	n, err := f.Read(b)
-	fmt.Println(n, err)
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Printf("(%v %v %v) ", scan.ProcessName, scan.PID, scan.Bit)
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Println("输入错误！", err)
+			continue
+		}
+		sli := strings.Fields(input)
 
-	nn, err := ff.Write(b[:n])
-	fmt.Println(nn, err)
+		if len(sli) == 1 && (sli[0] == "help" || sli[0] == "h") {
+			PrintHelp()
+			continue
+		}
+
+		if len(sli) == 1 && (sli[0] == "quit" || sli[0] == "q") {
+			fmt.Println("bye")
+			return
+		}
+
+		if len(sli) == 1 && (sli[0] == "clear" || sli[0] == "c") {
+			scan.Clear()
+			fmt.Println("success")
+			continue
+		}
+
+		if len(sli) == 1 && (sli[0] == "print" || sli[0] == "p") {
+			scan.PrintResult()
+			continue
+		}
+
+		if len(sli) == 1 && sli[0] == "pmap" {
+			scan.PrintPmap()
+			continue
+		}
+
+		if len(sli) == 2 && (sli[0] == "set" || sli[0] == "s") {
+			bit, _ := strconv.ParseInt(sli[1], 10, 8)
+			scan.SetBit(int(bit))
+			continue
+		}
+
+		if len(sli) == 2 && (sli[0] == "find" || sli[0] == "f") {
+			scan.Scan(sli[1])
+			scan.PrintResult()
+			continue
+		}
+
+		if len(sli) == 2 && (sli[0] == "write" || sli[0] == "w") {
+			scan.Overwrite(sli[1])
+			continue
+		}
+
+		PrintHelp()
+	}
+}
+
+func PrintHelp() {
+	fmt.Printf(`help,h			帮助
+quit,q			退出
+clear,c			清除搜索结果
+print,p			打印搜索结果
+pmap			打印进程地址空间
+set,s	<bit>		设置搜索类型(8,16,32,64),默认32
+find,f	<value>		搜索
+write,w	<value> 	写入
+
+`)
 }
