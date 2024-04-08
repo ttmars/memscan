@@ -98,10 +98,48 @@ func (m *MemScanner) PrintPmap() {
 }
 
 // 设置搜索类型
-func (m *MemScanner) SetBit(bit int) {
-	if bit == 8 || bit == 16 || bit == 32 || bit == 64 {
-		m.Bit = bit
+func (m *MemScanner) SetBit(b string) {
+	bit, err := strconv.ParseInt(b, 10, 8)
+	if err != nil {
+		return
 	}
+	if bit == 8 || bit == 16 || bit == 32 || bit == 64 {
+		m.Bit = int(bit)
+	}
+}
+
+// 打印内存段，start起始地址，off偏移，单位：byte
+func (m *MemScanner) PrintMem(startStr string, offStr string) {
+	startStr = strings.TrimPrefix(startStr, "0x")
+	start, err := strconv.ParseInt(startStr, 16, 64)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	off, err := strconv.ParseInt(offStr, 10, 64)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	m.MemFD.Seek(start, 0)
+	b := make([]byte, off)
+	n, err := m.MemFD.Read(b)
+	if err != nil {
+		fmt.Println("读取失败！")
+		return
+	}
+	fmt.Printf("read:%-11v\t%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02X %02X %02X %02X %02X %02X\n", n, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+	for i := 0; i < n; i++ {
+		if i != 0 && i%16 == 0 {
+			fmt.Println()
+		}
+		if i%16 == 0 {
+			fmt.Printf("0x%016x\t", start+int64(i))
+		}
+		fmt.Printf("%02x ", b[i])
+	}
+	fmt.Println()
 }
 
 // 写入值

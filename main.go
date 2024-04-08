@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"memscan/pkg"
 	"os"
-	"strconv"
 	"strings"
 )
 
@@ -58,9 +57,13 @@ func main() {
 			continue
 		}
 
+		if len(sli) == 3 && sli[0] == "pmem" {
+			scan.PrintMem(sli[1], sli[2])
+			continue
+		}
+
 		if len(sli) == 2 && (sli[0] == "set" || sli[0] == "s") {
-			bit, _ := strconv.ParseInt(sli[1], 10, 8)
-			scan.SetBit(int(bit))
+			scan.SetBit(sli[1])
 			continue
 		}
 
@@ -84,8 +87,9 @@ func PrintHelp() {
 quit,q			退出
 clear,c			清除搜索结果
 print,p			打印搜索结果
-pmap			打印进程地址空间
-set,s	<bit>		设置搜索类型(8,16,32,64),默认32
+pmap			打印内存段
+pmem <start> <off>	打印内存字节，start:16进制格式起始地址，off:字节数
+set,s	<bit>		设置搜索类型(8,16,32,64)，默认32
 find,f	<value>		搜索
 write,w	<value> 	写入
 
