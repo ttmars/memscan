@@ -10,13 +10,13 @@ import (
 
 func main() {
 	if len(os.Args) != 2 {
-		fmt.Println("参数错误！")
+		fmt.Println("args error")
 		return
 	}
 
 	scan, err := pkg.NewMemScanner(os.Args[1])
 	if err != nil {
-		fmt.Println("进程载入失败！", err)
+		fmt.Println("load process error", err)
 		return
 	}
 	defer scan.Close()
@@ -26,7 +26,7 @@ func main() {
 		fmt.Printf("(%v %v %v) ", scan.ProcessName, scan.PID, scan.Bit)
 		input, err := reader.ReadString('\n')
 		if err != nil {
-			fmt.Println("输入错误！", err)
+			fmt.Println("input error", err)
 			continue
 		}
 		sli := strings.Fields(input)
@@ -43,7 +43,7 @@ func main() {
 
 		if len(sli) == 1 && (sli[0] == "clear" || sli[0] == "c") {
 			scan.Clear()
-			fmt.Println("success")
+			fmt.Println("clear")
 			continue
 		}
 
@@ -73,8 +73,13 @@ func main() {
 			continue
 		}
 
-		if len(sli) == 2 && (sli[0] == "write" || sli[0] == "w") {
-			scan.Overwrite(sli[1])
+		if len(sli) == 3 && (sli[0] == "write" || sli[0] == "w") {
+			b, err := scan.Overwrite(sli[1], sli[2])
+			if err != nil {
+				fmt.Println("write fail", err)
+			} else {
+				fmt.Printf("write success [% x]\n", b)
+			}
 			continue
 		}
 
@@ -86,12 +91,12 @@ func PrintHelp() {
 	fmt.Printf(`help,h			帮助
 quit,q			退出
 clear,c			清除搜索结果
-print,p			打印搜索结果
+print,p			打印result搜索结果
 pmap			打印内存段
-pmem <start> <off>	打印内存字节，start:16进制格式起始地址，off:字节数
-set,s	<bit>		设置搜索类型(8,16,32,64)，默认32
+pmem <start> <off>	打印内存字节,start:16进制格式起始地址,off:字节数
+set,s	<bit>		设置搜索类型(8,16,32,64),默认32
 find,f	<value>		搜索
-write,w	<value> 	写入
+write,w	<index> <value> 覆写result[index]内存值,默认写入int8,int16,int32,int64
 
 `)
 }
